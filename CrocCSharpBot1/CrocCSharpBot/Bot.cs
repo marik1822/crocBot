@@ -23,6 +23,11 @@ namespace CrocCSharpBot
         /// </summary>
         private TelegramBotClient client;
 
+        /// <summary> 
+        /// Ведение журнала событий
+        /// </summary>
+        private NLog.Logger  log = NLog.LogManager.GetCurrentClassLogger();
+
         /// <summary>
         /// Конструктор без параметров
         /// </summary>
@@ -30,6 +35,11 @@ namespace CrocCSharpBot
         {
             // Создание клиента для Telegram
             client = new TelegramBotClient("1282004742:AAHYvVD7B_NixeIwGWPRoIZ1n9yJ5l5cNFY");
+            //string token = Properties.Settings.Default.Token;
+           // client = new TelegramBotClient(token);
+            var user = client.GetMeAsync();
+            Console.WriteLine(user.Result.Username);
+            //string name = user.Result.Username;
             client.OnMessage += MessageProcessor;
         }
 
@@ -40,120 +50,59 @@ namespace CrocCSharpBot
         /// <param name="e"></param>
         private void MessageProcessor(object sender, Telegram.Bot.Args.MessageEventArgs e)
         {
-            switch (e.Message.Type)
+            try
             {
-                case Telegram.Bot.Types.Enums.MessageType.Contact: // телефон
-                    if (e.Message.Chat.Id == e.Message.Contact.UserId)
-                    {
-                        string phone = e.Message.Contact.PhoneNumber;
-                        client.SendTextMessageAsync(e.Message.Chat.Id, $"Твой телефон: {phone}");
-                        Console.WriteLine(phone);
-                    }
-                    else
-                    {
-                        client.SendTextMessageAsync(e.Message.Chat.Id, $"Это не ваш номер телефона");
-                    }
-
-                    break;
-
-                case Telegram.Bot.Types.Enums.MessageType.Text: // текстовое сообщение
-                    if (e.Message.Text.Substring(0, 1) == "/")
-                    {
-                        CommandProcessor(e.Message);
-                    }
-                    else
-                    {
-                        client.SendTextMessageAsync(e.Message.Chat.Id, $"Ты сказал мне: {e.Message.Text}");
-                        Console.WriteLine(e.Message.Text);
-                    }
-                    break;
-                case Telegram.Bot.Types.Enums.MessageType.Photo:// фотография 
-                    client.SendTextMessageAsync(e.Message.Chat.Id, $"Вы отправили мне кртинку");
-                    Console.WriteLine("Отправлена фотография");
-                    
-                    /*client.GetFileAsync();
-                    TelegramBotClient.GetFileAsync(e.Message.Photo,) ;
-                    public static async void downloadFile(Message message)
-                    {
-                        try
+                log.Trace("|<- MassageProcessor");
+                switch (e.Message.Type)
+                {
+                    case Telegram.Bot.Types.Enums.MessageType.Contact: // телефон
+                        if (e.Message.Chat.Id == e.Message.Contact.UserId)
                         {
-                            var file = await TelegramBotClient.GetFileAsync(message.Photo.LastOrDefault().FileId);
-                            var filename = file.FileId + "." + file.FilePath.Split('.').Last();
-
-                            using (var saveImageStream = new FileStream(path + "/" + filename, FileMode.Create))
-                            {
-                                await file.FileStream.CopyToAsync(saveImageStream);
-                            }
+                            string phone = e.Message.Contact.PhoneNumber;
+                            client.SendTextMessageAsync(e.Message.Chat.Id, $"Твой телефон: {phone}");
+                            log.Trace(phone);
                         }
-                        catch (Exception ex)
+                        else
                         {
-                            Console.Writeline(ex.Message);
-                            }
-                    }*/
-                    //e.Message.Photo;
-                    //SaveFileDialog savedialog = new SaveFileDialog(); 
-                    //save(e.Message.Photo.Clone);
-                    //File.Create(e.Message.Photo);
-                    //client.UploadStickerFileAsync();
-                    //Создадим обьект класса XmlSerializer, для выполнения сериализации обьекта(в скобачках тип сеарилизованых данных)
-                    /* DirectoryInfo di = new DirectoryInfo("DataTime");
-                     try
-                     {
-                         // Проверяем существует ли, указанная папка
-                         if (di.Exists)
-                         {
-                             // Если - да, сообщаем об этом
-                             Console.WriteLine("\nПапка DataTime уже существует");
-                             goto Label1;
-                         }
-                         // Если - нет, создаём её
-                         else
-                         {
-                             di.Create();
-                             Console.WriteLine("\nСоздание папки прошло успешно");
-                             goto Label1;
-                         }
-                     }
-                     finally { }
+                            client.SendTextMessageAsync(e.Message.Chat.Id, $"Это не ваш номер телефона");
+                        }
 
-                 Label1:
-                      Объявляем строковую переменную "path", 
-                      * которая описывает путь к файлу 
-                     string path = @"DataTime\\OutputTime.txt";
-                     if (File.Exists(path))
-                     {
-                         // Если - да, то сообщаем об этом
-                         Console.WriteLine("\nФайл OutputTime.txt существует\n");
-                         //Console.ReadKey(e.Message.Photo);
-                         goto Label2;
-                     }
-                     else
-                     {
-                         // Если - нет, тоже сообщаем 
-                         Console.WriteLine("\nФайл Output.txt отсутствует!\nПриложение автоматически создаст его!\n");
-                         goto Label2;
-                     }
+                        break;
 
-                 Label2:
-                     /* В аргументах инициализатора нового экземпляра класса, наряду с
-                      * переменной "path", нужно указать свойство "true" - разрешена
-                        дозапись в существующий файл или "false" - переписать файл
-                     StreamWriter sw = new StreamWriter(path, true);
-                     sw.WriteLine(e.Message.Photo);
-                     // Записываем текущие дату и время в файл
-                     //sw.WriteLine(e.Message.Photo);
-                     Console.WriteLine("Запись прошла успешно!");
-                     /* Перед выходом из приложения не забываем закрывать файл 
-                     sw.Close();*/
-                    client.SendTextMessageAsync(e.Message.Chat.Id, $"Я её сохранил!)");
-                    break;
-                default:
-                    client.SendTextMessageAsync(e.Message.Chat.Id, $"Ты прислал мне {e.Message.Type}, но я это пока не понимаю");
-                    Console.WriteLine(e.Message.Type);
-                    break;
+                    case Telegram.Bot.Types.Enums.MessageType.Text: // текстовое сообщение
+                        if (e.Message.Text.Substring(0, 1) == "/")
+                        {
+                            CommandProcessor(e.Message);
+                        }
+                        else
+                        {
+                            client.SendTextMessageAsync(e.Message.Chat.Id, $"Ты сказал мне: {e.Message.Text}");
+                            log.Trace(e.Message.Text);
+                        }
+                        break;
+                    case Telegram.Bot.Types.Enums.MessageType.Photo:// фотография 
+                        client.SendTextMessageAsync(e.Message.Chat.Id, $"Вы отправили мне кртинку");
+                        log.Trace("Отправлено фото");
+
+                        
+                        client.SendTextMessageAsync(e.Message.Chat.Id, $"Я её сохранил!)");
+                        break;
+                    default:
+                        client.SendTextMessageAsync(e.Message.Chat.Id, $"Ты прислал мне {e.Message.Type}, но я это пока не понимаю");
+                        log.Info(e.Message.Type);
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Warn(ex);
+            }
+            finally
+            {
+                log.Trace("|-> MessageProcessor");
             }
         }
-        
+
         /// <summary>
         /// Обработка команды
         /// </summary>
@@ -170,7 +119,7 @@ namespace CrocCSharpBot
                     button.RequestContact = true;
                     var array = new KeyboardButton[] { button };
                     var reply = new ReplyKeyboardMarkup(array, true, true);
-                        client.SendTextMessageAsync(message.Chat.Id, $"Привет, {message.Chat.FirstName}, скажи мне свой телефон", replyMarkup: reply); 
+                    client.SendTextMessageAsync(message.Chat.Id, $"Привет, {message.Chat.FirstName}, скажи мне свой телефон", replyMarkup: reply);
                     break;
                 case "help":
                     client.SendTextMessageAsync(message.Chat.Id, $"Вот мой список команд: /help - список команд /start - авторизация по номеру ");
@@ -192,4 +141,5 @@ namespace CrocCSharpBot
             client.StartReceiving();
         }
     }
+
 }

@@ -8,16 +8,41 @@ namespace CrocCSharpBot
     class Program
     {
         /// <summary>
+        /// Ведение журнала событий
+        /// </summary>
+        private static NLog.Logger log = NLog.LogManager.GetCurrentClassLogger();
+
+        /// <summary>
         /// Точка входа в приложение
         /// </summary>
         /// <param name="args">Параметры командной строки</param>
         static void Main(string[] args)
         {
-            Console.WriteLine("Запуск бота в консольном режиме. Нажмите Enter для завершения");
-            Bot bot;
-            bot = new Bot();
-            bot.Run();
-            Console.ReadLine();
+            try
+            {
+                
+                Bot bot;
+                bot = new Bot();
+                bot.Run();
+                log.Info("Запуск бота в консольном режиме");
+            }
+            catch (Exception ex)
+            {
+                // Отображение сообщения, включая все вложенные исключения
+                do
+                {
+                    Console.WriteLine(ex.Message);
+                    Console.ReadLine();
+                   // log.Fatal(ex);
+                   // ex = ex.InnerException;
+                }
+                while (ex != null);
+            }
+            finally
+            {
+                Console.WriteLine("Нажмите Enter для завершения");
+                Console.ReadLine();
+            }
         }
     }
 }
