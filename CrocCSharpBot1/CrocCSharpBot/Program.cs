@@ -31,7 +31,7 @@ namespace CrocCSharpBot
                     case "console":
                         Bot bot;
                         bot = new Bot();
-                        bot.Run();
+                        bot.Start();
                         log.Info("Запуск бота в консольном режиме");
                         break;
                     case "":

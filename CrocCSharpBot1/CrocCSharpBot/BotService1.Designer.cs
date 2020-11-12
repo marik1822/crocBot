@@ -31,6 +31,8 @@
             // 
             // BotService
             // 
+            this.CanHandlePowerEvent = true;
+            this.CanPauseAndContinue = true;
             this.ServiceName = "BotService";
 
         }
