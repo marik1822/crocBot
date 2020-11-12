@@ -61,30 +61,58 @@ namespace CrocCSharpBot
                 switch (e.Message.Type)
                 {
                     case Telegram.Bot.Types.Enums.MessageType.Contact: // телефон
-                        if (e.Message.Chat.Id == e.Message.Contact.UserId)
-                        {
-                            string phone = e.Message.Contact.PhoneNumber;
-                            client.SendTextMessageAsync(e.Message.Chat.Id, $"Твой телефон: {phone}");
-                            log.Trace(phone);
-                            //Регистрация пользователя
-                            //(i) Использование инициализатора
-                            var user = new User()
-                            {
-                                ID = e.Message.Contact.UserId,
-                                FirstName = e.Message.Contact.FirstName,
-                                LastName = e.Message.Contact.LastName,
-                                UserName = e.Message.Chat.Username,
-                                PhoneNumber = phone
-                            };
-                            state.AddUser(user);
-                            state.Save(Properties.Settings.Default.FileName);
-                        }
-                        else
+                        if (e.Message.Chat.Id != e.Message.Contact.UserId)
                         {
                             client.SendTextMessageAsync(e.Message.Chat.Id, $"Это не ваш номер телефона");
                             return;
+                            /* string phone = e.Message.Contact.PhoneNumber;
+                             //client.SendTextMessageAsync(e.Message.Chat.Id, $"Твой телефон: {phone}");
+                             log.Trace(phone);
+                             //Регистрация пользователя
+                             //(i) Использование инициализатора
+                             var user = new User()
+                             {
+                                 ID = e.Message.Contact.UserId,
+                                 FirstName = e.Message.Contact.FirstName,
+                                 LastName = e.Message.Contact.LastName,
+                                 UserName = e.Message.Chat.Username,
+                                 PhoneNumber = phone
+                             };
+                             if (state.AddUser(user))
+                             {
+                                 //state.AddUser(user);
+                                 state.Save(Properties.Settings.Default.FileName);
+                                 client.SendAnimationAsync(e.Message.Chat.Id, $"Твой телефон добавлен в базу: {phone}");
+                             }
+                             else
+                             {
+                                 client.SendAnimationAsync(e.Message.Chat.Id, $"Твой телефон уже есть в базе: {phone}");
+                             }*/
                         }
-                        //state.Users = new User[1] { user };
+
+                        string phone = e.Message.Contact.PhoneNumber;
+                        //client.SendTextMessageAsync(e.Message.Chat.Id, $"Твой телефон: {phone}");
+                        log.Trace(phone);
+                        //Регистрация пользователя
+                        //(i) Использование инициализатора
+                        var user = new User()
+                        {
+                            ID = e.Message.Contact.UserId,
+                            FirstName = e.Message.Contact.FirstName,
+                            LastName = e.Message.Contact.LastName,
+                            UserName = e.Message.Chat.Username,
+                            PhoneNumber = phone
+                        };
+                        if (state.AddUser(user))
+                        {
+
+                            state.Save(Properties.Settings.Default.FileName);
+                            client.SendTextMessageAsync(e.Message.Chat.Id, $"Твой телефон добавлен в базу: {phone}");
+                        }
+                        else
+                        {
+                            client.SendTextMessageAsync(e.Message.Chat.Id, $"Твой телефон уже есть в базе: {phone}");
+                        }
                         break;
 
                     case Telegram.Bot.Types.Enums.MessageType.Text: // текстовое сообщение
@@ -127,27 +155,62 @@ namespace CrocCSharpBot
         /// <param name="message"></param>
         private void CommandProcessor(Telegram.Bot.Types.Message message)
         {
-            // Отрезаем первый символ (который должен быть '/')
-            string command = message.Text.Substring(1).ToLower();
-
-            switch (command)
+            try
             {
-                case "start":
-                    var button = new KeyboardButton("Поделись телефоном");
-                    button.RequestContact = true;
-                    var array = new KeyboardButton[] { button };
-                    var reply = new ReplyKeyboardMarkup(array, true, true);
-                    client.SendTextMessageAsync(message.Chat.Id, $"Привет, {message.Chat.FirstName}, скажи мне свой телефон", replyMarkup: reply);
-                    break;
-                case "help":
-                    client.SendTextMessageAsync(message.Chat.Id, $"Вот мой список команд: /help - список команд /start - авторизация по номеру ");
-                    //client.SendTextMessageAsync(message.Chat.Id, $"help - список команд");
-                    //client.SendTextMessageAsync(message.Chat.Id, $"start - авторизация по номеру");
-                    break;
-                default:
+                log.Trace("|<- CommandProcessor");
+
+                // Отрезаем первый символ (который должен быть '/')
+                string command = message.Text.Substring(1).ToLower();
+                //Построение метода для вызова
+                string metod = command.Substring(0, 1).ToUpper() + command.Substring(1) + "Command";
+                //ищем метод по имени 
+                System.Reflection.MethodInfo info = GetType().GetMethod(metod);
+                if (info == null)
+                {
                     client.SendTextMessageAsync(message.Chat.Id, $"Я пока не понимаю команду {command}");
-                    break;
+                    return;
+                }
+                //Вызов метода по имени
+                info.Invoke(this, new object[] { message });
             }
+            finally
+            {
+                log.Trace("|-> CommandProcessor");
+            }
+
+
+        }
+        public void RegisterCommand(Telegram.Bot.Types.Message message)
+        {
+            var button = new KeyboardButton("Поделись телефоном");
+            button.RequestContact = true;
+            var array = new KeyboardButton[] { button };
+            var reply = new ReplyKeyboardMarkup(array, true, true);
+            client.SendTextMessageAsync(message.Chat.Id, $"Привет, {message.Chat.FirstName}, скажи мне свой телефон", replyMarkup: reply);
+        }
+        /// <summary>
+        /// Список всех команд
+        /// </summary>
+        /// <param name="message"></param>
+        public void HelpCommand(Telegram.Bot.Types.Message message)
+        {
+            string m = "Список возможных команд:\n";
+            foreach (Commands s in Enum.GetValues(typeof(Commands)))
+            {
+                string cmd = s.ToString().ToLower();
+                string descr = s.ToDescription();
+                m += $"/{cmd} - {descr} \n";
+            }
+            client.SendTextMessageAsync(message.Chat.Id, m, replyMarkup: null);
+        }
+        /// <summary>
+        /// Начало работы с ботом
+        /// </summary>
+        /// <param name="message"></param>
+        [Description("Начало работы с ботом")]
+        public void StartCommand(Telegram.Bot.Types.Message message)
+        {
+            client.SendTextMessageAsync(message.Chat.Id, $"Привет, {message.Chat.FirstName}, для начала прошу зарегистрироваться при помощи команды /register ");
         }
 
         /// <summary>

@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Linq;
+using System.ServiceProcess;
 
 namespace CrocCSharpBot
 {
@@ -20,11 +22,28 @@ namespace CrocCSharpBot
         {
             try
             {
-                
-                Bot bot;
-                bot = new Bot();
-                bot.Run();
-                log.Info("Запуск бота в консольном режиме");
+                // Первый параметр командной строки
+                string arg1 = args.Count() > 0 ? args[0] : string.Empty;
+                //Приведём к строчным буквам
+                arg1 = arg1.ToLower();
+                switch (arg1)
+                {
+                    case "console":
+                        Bot bot;
+                        bot = new Bot();
+                        bot.Run();
+                        log.Info("Запуск бота в консольном режиме");
+                        break;
+                    case "":
+                        var svc = new BotService();
+                        ServiceBase.Run(svc);
+                        break;
+                    default: //другой параметр
+                        Console.WriteLine($"Неправильный параметр: {arg1}");
+                        //дописать вывод справки
+                        break;
+                }
+               
             }
             catch (Exception ex)
             {
@@ -40,8 +59,11 @@ namespace CrocCSharpBot
             }
             finally
             {
-                Console.WriteLine("Нажмите Enter для завершения");
-                Console.ReadLine();
+                if (Environment.UserInteractive)
+                {
+                    Console.WriteLine("Нажмите Enter для завершения");
+                    Console.ReadLine();
+                }
             }
         }
     }
